@@ -36,7 +36,8 @@ internal class InvoiceService(
             mwst_is_net = configuration.GetValue<bool>("Bexio:MwstIsNet"),
             is_valid_from = invoice.Datum,
             is_valid_to = DateTime
-                .ParseExact(invoice.Datum, "dd.MM.yyyy", CultureInfo.InvariantCulture).AddMonths(1).ToString("dd.MM.yyyy"),
+                .TryParseExact(invoice.Datum, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var validTo)
+                    ? validTo.AddMonths(1).ToString("dd.MM.yyyy") : null,
             logopaper_id = configuration.GetValue<int>("Bexio:LogopaperId"),
             language_id = configuration.GetValue<int>("Bexio:LanguageId"),
             positions =
@@ -47,7 +48,7 @@ internal class InvoiceService(
                     unit_id = configuration.GetValue<int>("Bexio:PositionUnitId"),
                     account_id = configuration.GetValue<int>("Bexio:PositionAccountId"),
                     tax_id = configuration.GetValue<int>("Bexio:TaxId"),
-                    unit_price = invoice.Brutto.ToString(CultureInfo.InvariantCulture),
+                    unit_price = invoice.Kundenpreis?.ToString(CultureInfo.InvariantCulture),
                     discount_in_percent = "0",
                     type = configuration.GetValue<string>("Bexio:PositionType")
                 }

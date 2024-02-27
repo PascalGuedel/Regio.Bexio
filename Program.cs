@@ -23,8 +23,13 @@ try
     var services = serviceScope.ServiceProvider;
 
     var invoiceService = services.GetRequiredService<IImportInvoiceService>();
+    var config = services.GetRequiredService<IConfiguration>();
 
-    await invoiceService.DeleteDataAsync();
+    if (config.GetValue<bool>("Bexio:DeleteInvoicesAndContacts"))
+    {
+        await invoiceService.DeleteDataAsync();
+    }
+
     await invoiceService.ImportInvoicesAsync();
 
     host.Run();

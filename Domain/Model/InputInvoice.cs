@@ -17,21 +17,21 @@ internal record InputInvoice
 
     public string? Pos { get; set; }
 
-    public decimal GesamtInklMwst { get; set; }
+    public decimal? GesamtInklMwst { get; set; }
 
     public string? KDNr { get; set; }
 
     public string? StornoVonNr { get; set; }
 
-    public decimal Brutto { get; set; }
+    public decimal? Brutto { get; set; }
 
-    public double MwstPercent { get; set; }
+    public double? MwstPercent { get; set; }
 
-    public decimal Mwst { get; set; }
+    public decimal? Mwst { get; set; }
 
-    public decimal Kundenpreis { get; set; }
+    public decimal? Kundenpreis { get; set; }
 
-    public decimal Netto { get; set; }
+    public decimal? Netto { get; set; }
 
     public string? Waehrung { get; set; }
 

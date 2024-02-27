@@ -25,7 +25,7 @@ internal class ContactService(
         var contactPostDto = new ContactPostDto
         {
             name_1 = inputInvoice.ArEmpfName,
-            name_2 = $"{inputInvoice.KDNr}/{inputInvoice.PRNr}",
+            name_2 = $"Kundennummer: {inputInvoice.KDNr}/{inputInvoice.PRNr}",
             salutation_id = configuration.GetValue<int>("Bexio:Contact:SalutationId"),
             country_id = configuration.GetValue<int>("Bexio:Contact:CountryId"),
             user_id = configuration.GetValue<int>("Bexio:UserId"),
