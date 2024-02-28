@@ -7,6 +7,8 @@ internal interface IBexioHttpClient
 {
     Task<TResponse?> PostAsync<TResponse>(string url, HttpContent content);
 
+    Task<TResponse?> PostAsync<TResponse>(string url);
+
     Task<TResponse?> GetAsync<TResponse>(string url);
 
     Task DeleteAsync(string url);
@@ -30,6 +32,13 @@ internal class BexioHttpClient : IBexioHttpClient
     public async Task<TResponse?> PostAsync<TResponse>(string url, HttpContent content)
     {
         var httpResponseMsg = await _client.PostAsync(url, content);
+
+        return await HandleResponseAsync<TResponse>(httpResponseMsg);
+    }
+
+    public async Task<TResponse?> PostAsync<TResponse>(string url)
+    {
+        var httpResponseMsg = await _client.PostAsync(url, null);
 
         return await HandleResponseAsync<TResponse>(httpResponseMsg);
     }

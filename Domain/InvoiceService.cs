@@ -55,8 +55,12 @@ internal class InvoiceService(
             ]
         };
 
+        // Create Invoice
         HttpContent httpContent = new StringContent(JsonSerializer.Serialize(invoiceDto));
-        await bexioClient.PostAsync<InvoicePostResultDto>("/2.0/kb_invoice", httpContent);
+        var postResult = await bexioClient.PostAsync<InvoicePostResultDto>("/2.0/kb_invoice", httpContent);
+
+        // Update Invoice status (issue invoice)
+        await bexioClient.PostAsync<InvoicePostIssueResultDto>($"/2.0/kb_invoice/{postResult!.id}/issue", httpContent);
     }
 
     public async Task<bool> IsInvoiceExistingAsync(string title)

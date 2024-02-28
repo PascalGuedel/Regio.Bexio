@@ -1,5 +1,5 @@
 ﻿namespace Regio.Bexio.Model;
-internal class ContactDto
+internal record ContactDto
 {
     public int id { get; set; }
     public string? nr { get; set; }

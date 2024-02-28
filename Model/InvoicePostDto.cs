@@ -1,6 +1,6 @@
 ﻿namespace Regio.Bexio.Model;
 
-internal class InvoicePostDto
+internal record InvoicePostDto
 {
     public object? title { get; set; }
     public int contact_id { get; set; }

@@ -24,14 +24,22 @@ internal class ExcelService : IExcelService
 
         for (var row = 1; row <= rowCount; row++)
         {
+            // Skip first 3 rows
             if (row <= 3)
             {
                 continue;
             }
 
-            if(string.IsNullOrEmpty(worksheet.Cells[row, 1].Value?.ToString()))
+            // Skip empty rows
+            if (string.IsNullOrEmpty(worksheet.Cells[row, 1].Value?.ToString()))
             {
                 break;
+            }
+
+            // Skip rows with irrelevant states
+            if (IsInvoiceStateIsIrrelevant(worksheet.Cells[row, 8].Value?.ToString()))
+            {
+                continue;
             }
 
             var invoice = new InputInvoice
@@ -60,60 +68,24 @@ internal class ExcelService : IExcelService
             inputInvoices.Add(invoice);
         }
 
-        //using var doc = SpreadsheetDocument.Open(excelFilePath, false);
-
-        //var workbookPart = doc.WorkbookPart;
-        //var sheet = workbookPart?.Workbook.Descendants<Sheet>().First();
-
-        //if (workbookPart == null || sheet == null)
-        //{
-        //    throw new BexioException("No sheet found in the workbook");
-        //}
-
-        //var worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!);
-        //var worksheet = worksheetPart.Worksheet;
-
-        //foreach (var row in worksheet.Descendants<Row>())
-        //{
-        //    var orderedCells = row.Elements<Cell>().ToList();
-
-        //    if (orderedCells.Count() < 10)
-        //    {
-        //        continue;
-        //    }
-
-        //    if (GetCellValue(doc, orderedCells[0]) == "Nr.")
-        //    {
-        //        continue;
-        //    }
-
-        //    var invoice = new InputInvoice
-        //    {
-        //        Nr = GetCellValue(doc, orderedCells[0]),
-        //        Datum = GetCellValue(doc, orderedCells[1]),
-        //        ArEmpfName = GetCellValue(doc, orderedCells[2]),
-        //        ArEmpfAdr1 = GetCellValue(doc, orderedCells[3]),
-        //        ArEmpfAdr3 = GetCellValue(doc, orderedCells[4]),
-        //        ArEmpfAdr4 = GetCellValue(doc, orderedCells[5]),
-        //        PRNr = GetCellValue(doc, orderedCells[6]),
-        //        Pos = GetCellValue(doc, orderedCells[7]),
-        //        GesamtInklMwst = decimal.TryParse(GetCellValue(doc, orderedCells[8]), out var gesamtMwst) ? gesamtMwst : null,
-        //        KDNr = GetCellValue(doc, orderedCells[9]),
-        //        StornoVonNr = GetCellValue(doc, orderedCells[10]),
-        //        Brutto = decimal.TryParse(GetCellValue(doc, orderedCells[11]), out var brutto) ? brutto : null,
-        //        MwstPercent = double.TryParse(GetCellValue(doc, orderedCells[12]), out var mwstPercent) ? mwstPercent : null,
-        //        Mwst = decimal.TryParse(GetCellValue(doc, orderedCells[13]), out var mwst) ? mwst : null,
-        //        Kundenpreis = decimal.TryParse(GetCellValue(doc, orderedCells[14]), out var kundenpreis) ? kundenpreis : null,
-        //        Netto = decimal.TryParse(GetCellValue(doc, orderedCells[15]), out var netto) ? netto : null,
-        //        Waehrung = GetCellValue(doc, orderedCells[16]),
-        //        ProduktName = GetCellValue(doc, orderedCells[17]),
-        //        Kundencode = GetCellValue(doc, orderedCells[18])
-        //    };
-
-        //    inputInvoices.Add(invoice);
-        //}
-
         return inputInvoices;
+    }
+
+    private static bool IsInvoiceStateIsIrrelevant(string? invoiceState)
+    {
+        if (invoiceState == null)
+        {
+            return true;
+        }
+
+        var irrelevantStates = new List<string>
+        {
+            "SRE",
+            "STO",
+            "0"
+        };
+
+        return irrelevantStates.Contains(invoiceState);
     }
 
 
@@ -227,24 +199,4 @@ internal class ExcelService : IExcelService
 
         return excelFiles[0];
     }
-
-    //private static string? GetCellValue(SpreadsheetDocument document, CellType cell)
-    //{
-    //    var stringTablePart = document.WorkbookPart?.SharedStringTablePart;
-    //    var value = cell.CellValue?.InnerXml;
-
-    //    if (value == null)
-    //    {
-    //        return null;
-    //    }
-
-    //    if (cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
-    //    {
-    //        return stringTablePart?.SharedStringTable.ChildElements[int.Parse(value)].InnerText;
-    //    }
-
-    //    return value;
-    //}
 }
-
-
