@@ -367,6 +367,9 @@ FodyWeavers.xsd
 terraform.tfstate
 terraform.tfstate.backup
 
-#Serilog
+# Serilog
 *.bookmark
 *.log
+
+# IntelliJ
+.idea/
