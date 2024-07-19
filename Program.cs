@@ -23,13 +23,20 @@ try
     var services = serviceScope.ServiceProvider;
 
     var invoiceService = services.GetRequiredService<IImportInvoiceService>();
+    var cleanupService = services.GetRequiredService<ICleanupService>();
+    
     var config = services.GetRequiredService<IConfiguration>();
 
     if (config.GetValue<bool>("Bexio:DeleteInvoicesAndContacts"))
     {
-        await invoiceService.DeleteDataAsync();
+        await cleanupService.DeleteAllInvoicesAndContactsAsync();
     }
 
+    if (config.GetValue<bool>("Bexio:CleanupContacts"))
+    {
+        await cleanupService.CleanupContactsAsync();
+    }
+    
     await invoiceService.ImportInvoicesAsync();
 
     host.Run();
@@ -55,6 +62,7 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
                 .AddSingleton<IContactService, ContactService>()
                 .AddSingleton<IExcelService, ExcelService>()
                 .AddSingleton<IImportInvoiceService, ImportInvoiceService>()
+                .AddSingleton<ICleanupService, CleanupService>()
                 .AddSingleton<IBexioHttpClient, BexioHttpClient>()
                 .AddAutoMapper(typeof(MappingProfile))
                 .AddHttpClient();

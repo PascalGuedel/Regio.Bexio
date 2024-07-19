@@ -7,6 +7,8 @@ internal interface IBexioHttpClient
 {
     Task<TResponse?> PostAsync<TRequest, TResponse>(string url, TRequest request);
     
+    Task PostAsync<TRequest>(string url, TRequest request);
+    
     Task PostAsync(string url);
     
     Task<TResponse?> GetAsync<TResponse>(string url);
@@ -35,6 +37,14 @@ internal class BexioHttpClient : IBexioHttpClient
         var httpResponseMsg = await _client.PostAsync(url, httpContent);
 
         return await HandleResponseAsync<TResponse>(httpResponseMsg);
+    }
+
+    public async Task PostAsync<TRequest>(string url, TRequest request)
+    {
+        var httpContent = new StringContent(JsonSerializer.Serialize(request));
+        var httpResponseMsg = await _client.PostAsync(url, httpContent);
+
+        await HandleResponseAsync(httpResponseMsg);
     }
 
     public async Task PostAsync(string url)
