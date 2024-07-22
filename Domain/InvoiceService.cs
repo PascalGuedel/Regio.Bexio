@@ -18,8 +18,6 @@ internal interface IInvoiceService
     Task SetInvoiceToDraftAsync(int invoiceId);
 
     Task DeleteInvoiceAsync(int invoiceId);
-
-    Task UpdateInvoiceAsync(InvoicePutDto invoice, int invoiceId);
 }
 
 internal class InvoiceService(
@@ -107,10 +105,5 @@ internal class InvoiceService(
     public async Task DeleteInvoiceAsync(int invoiceId)
     {
         await bexioClient.DeleteAsync($"/2.0/kb_invoice/{invoiceId}");
-    }
-
-    public async Task UpdateInvoiceAsync(InvoicePutDto invoice, int invoiceId)
-    {
-        await bexioClient.PostAsync($"/2.0/kb_invoice/{invoiceId}", invoice);
     }
 }

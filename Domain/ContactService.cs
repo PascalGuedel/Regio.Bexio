@@ -56,8 +56,7 @@ internal class ContactService(
             {
                 criteria = "=",
                 field = "name_2",
-                // value = $"Kundennummer: {name}"
-                value = name
+                value = $"Kundennummer: {name}"
             }
         };
 

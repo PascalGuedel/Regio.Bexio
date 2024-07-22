@@ -8,6 +8,5 @@ public class MappingProfile : Profile
     public MappingProfile()
     {
         CreateMap<ContactPostResponseDto, ContactSearchResultDto>();
-        CreateMap<InvoiceGetDto, InvoicePutDto>();
     }
 }
