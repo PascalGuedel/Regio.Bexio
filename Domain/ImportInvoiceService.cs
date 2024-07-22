@@ -10,8 +10,6 @@ namespace Regio.Bexio.Domain;
 internal interface IImportInvoiceService
 {
     Task ImportInvoicesAsync();
-
-    Task DeleteDataAsync();
 }
 
 internal class ImportInvoiceService(
@@ -33,7 +31,7 @@ internal class ImportInvoiceService(
             for (var index = 0; index < inputInvoices.Count; index++)
             {
                 logger.LogInformation("Process {actualInvoice}/{numberOfInvoices}", index + 1, inputInvoices.Count);
-
+            
                 var inputInvoice = inputInvoices[index];
                 await ProcessInvoice(inputInvoice);
             }
@@ -45,31 +43,6 @@ internal class ImportInvoiceService(
         catch (System.Exception ex)
         {
             logger.LogError(ex, "Error during import invoices");
-        }
-    }
-
-    public async Task DeleteDataAsync()
-    {
-        Console.WriteLine("Do you really want to delete all contacts and invoices? (yes/no)");
-        var answer = Console.ReadLine();
-
-        if (answer != "yes")
-        {
-            return;
-        }
-
-        logger.LogInformation("Start delete data");
-
-        try
-        {
-            await invoiceService.DeleteAllInvoicesAsync();
-            await contactService.DeleteAllContactsAsync();
-
-            logger.LogInformation("Data successfully deleted");
-        }
-        catch (System.Exception ex)
-        {
-            logger.LogError(ex, "Error during deleting data");
         }
     }
 
@@ -105,6 +78,7 @@ internal class ImportInvoiceService(
         }
 
         // Create Invoice
+        logger.LogInformation("Invoice {inputInvoiceNr} does not exists and will be created", inputInvoice.Nr);
         await invoiceService.CreateInvoiceAsync(inputInvoice, contact.id.GetValueOrDefault());
     }
 }

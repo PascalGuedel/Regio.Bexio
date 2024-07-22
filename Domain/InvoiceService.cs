@@ -1,27 +1,32 @@
 ﻿using System.Globalization;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Regio.Bexio.Domain.Constants;
 using Regio.Bexio.Domain.Model;
 using Regio.Bexio.Infrastructure;
 using Regio.Bexio.Model;
 
 namespace Regio.Bexio.Domain;
+
 internal interface IInvoiceService
 {
     Task CreateInvoiceAsync(InputInvoice invoice, int contactId);
 
     Task<bool> IsInvoiceExistingAsync(string title);
+    
+    Task<IList<InvoiceGetDto>> GetInvoicesAsync();
 
-    Task DeleteAllInvoicesAsync();
+    Task SetInvoiceToDraftAsync(int invoiceId);
+
+    Task DeleteInvoiceAsync(int invoiceId);
 }
 
 internal class InvoiceService(
-    ILogger<InvoiceService> logger,
     IConfiguration configuration,
     IBexioHttpClient bexioClient) : IInvoiceService
 {
+    // Maximal supported value of bexio
+    private const int INVOICE_GET_LIMIT = 2000;
+    
     public async Task CreateInvoiceAsync(InputInvoice invoice, int contactId)
     {
         var invoiceDto = new InvoicePostDto
@@ -36,8 +41,10 @@ internal class InvoiceService(
             mwst_is_net = configuration.GetValue<bool>("Bexio:MwstIsNet"),
             is_valid_from = invoice.Datum,
             is_valid_to = DateTime
-                .TryParseExact(invoice.Datum, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var validTo)
-                    ? validTo.AddMonths(1).ToString("dd.MM.yyyy") : null,
+                .TryParseExact(invoice.Datum, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None,
+                    out var validTo)
+                ? validTo.AddMonths(1).ToString("dd.MM.yyyy")
+                : null,
             logopaper_id = configuration.GetValue<int>("Bexio:LogopaperId"),
             language_id = configuration.GetValue<int>("Bexio:LanguageId"),
             positions =
@@ -56,11 +63,12 @@ internal class InvoiceService(
         };
 
         // Create Invoice
-        HttpContent httpContent = new StringContent(JsonSerializer.Serialize(invoiceDto));
-        var postResult = await bexioClient.PostAsync<InvoicePostResultDto>("/2.0/kb_invoice", httpContent);
+        var postResult =
+            await bexioClient.PostAsync<InvoicePostDto, InvoicePostResultDto>("/2.0/kb_invoice", invoiceDto);
 
         // Update Invoice status (issue invoice)
-        await bexioClient.PostAsync<InvoicePostIssueResultDto>($"/2.0/kb_invoice/{postResult!.id}/issue", httpContent);
+        await bexioClient.PostAsync<InvoicePostDto, InvoicePostIssueResultDto>(
+            $"/2.0/kb_invoice/{postResult!.id}/issue", invoiceDto);
     }
 
     public async Task<bool> IsInvoiceExistingAsync(string title)
@@ -77,30 +85,25 @@ internal class InvoiceService(
             }
         };
 
-        HttpContent httpContent = new StringContent(JsonSerializer.Serialize(criteria));
-        var response = await bexioClient.PostAsync<IEnumerable<InvoiceSearchResultDto>>("/2.0/kb_invoice/search", httpContent);
+        var response =
+            await bexioClient.PostAsync<List<SearchCriteriaDto>, IEnumerable<InvoiceSearchResultDto>>(
+                "/2.0/kb_invoice/search", criteria);
 
         return response?.Any() ?? false;
     }
 
-    public async Task DeleteAllInvoicesAsync()
+    public async Task<IList<InvoiceGetDto>> GetInvoicesAsync()
     {
-        logger.LogInformation("--- Start deleting invoices");
+        return await bexioClient.GetAsync<IList<InvoiceGetDto>>($"/2.0/kb_invoice?limit={INVOICE_GET_LIMIT}") ?? new List<InvoiceGetDto>();
+    }
 
-        var invoices = await bexioClient.GetAsync<IList<InvoiceGetDto>>("/2.0/kb_invoice");
-        if (invoices == null || !invoices.Any())
-        {
-            logger.LogInformation("No invoices to delete");
-            return;
-        }
+    public async Task SetInvoiceToDraftAsync(int invoiceId)
+    {
+        await bexioClient.PostAsync($"/2.0/kb_invoice/{invoiceId}/revert_issue");
+    }
 
-        for (var index = 0; index < invoices.Count; index++)
-        {
-            var invoice = invoices[index];
-            await bexioClient.DeleteAsync($"/2.0/kb_invoice/{invoice.id}");
-            logger.LogInformation("Deleted invoice {actualInvoice}/{invoiceCount}", index + 1, invoices.Count);
-        }
-
-        logger.LogInformation("Deleted all invoices");
+    public async Task DeleteInvoiceAsync(int invoiceId)
+    {
+        await bexioClient.DeleteAsync($"/2.0/kb_invoice/{invoiceId}");
     }
 }

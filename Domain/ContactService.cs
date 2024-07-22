@@ -1,18 +1,22 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Regio.Bexio.Domain.Model;
 using Regio.Bexio.Infrastructure;
 using Regio.Bexio.Model;
 
 namespace Regio.Bexio.Domain;
+
 internal interface IContactService
 {
     Task<ContactPostResponseDto?> CreateContactAsync(InputInvoice inputInvoice);
 
     Task<IEnumerable<ContactSearchResultDto>> SearchContactAsync(string name);
 
+    Task<IEnumerable<ContactGetDto>> GetAllContactsAsync();
+
     Task DeleteAllContactsAsync();
+
+    Task DeleteContactAsync(int contactId);
 }
 
 internal class ContactService(
@@ -36,17 +40,10 @@ internal class ContactService(
             city = inputInvoice.ArEmpfAdr4
         };
 
-        HttpContent httpContent = new StringContent(JsonSerializer.Serialize(contactPostDto));
-        var response = await bexioClient.PostAsync<ContactPostResponseDto>("/2.0/contact", httpContent);
+        var response =
+            await bexioClient.PostAsync<ContactPostDto, ContactPostResponseDto>("/2.0/contact", contactPostDto);
 
         return response;
-    }
-
-    public async Task<IEnumerable<ContactDto>?> GetContactsAsync()
-    {
-        logger.LogInformation("GetContactsAsync called");
-
-        return await bexioClient.GetAsync<IEnumerable<ContactDto>>("/2.0/contact");
     }
 
     public async Task<IEnumerable<ContactSearchResultDto>> SearchContactAsync(string name)
@@ -59,14 +56,23 @@ internal class ContactService(
             {
                 criteria = "=",
                 field = "name_2",
-                value = name
+                value = $"Kundennummer: {name}"
             }
         };
 
-        HttpContent httpContent = new StringContent(JsonSerializer.Serialize(criteria));
-        var response = await bexioClient.PostAsync<IEnumerable<ContactSearchResultDto>>("/2.0/contact/search", httpContent);
+        var response =
+            await bexioClient.PostAsync<List<SearchCriteriaDto>, IEnumerable<ContactSearchResultDto>>(
+                "/2.0/contact/search", criteria);
 
         return response ?? new List<ContactSearchResultDto>();
+    }
+
+    public async Task<IEnumerable<ContactGetDto>> GetAllContactsAsync()
+    {
+        var response =
+            await bexioClient.GetAsync<IEnumerable<ContactGetDto>>("/2.0/contact?limit=2000");
+
+        return response ?? new List<ContactGetDto>();
     }
 
     public async Task DeleteAllContactsAsync()
@@ -84,10 +90,15 @@ internal class ContactService(
         for (var index = 0; index < contacts.Count; index++)
         {
             var contact = contacts[index];
-            await bexioClient.DeleteAsync($"/2.0/contact/{contact.id}");
+            await DeleteContactAsync(contact.id);
             logger.LogInformation("Deleted contact {actualContact}/{contactCount}", index + 1, contacts.Count);
         }
-
+        
         logger.LogInformation("Deleted all contacts");
+    }
+
+    public async Task DeleteContactAsync(int contactId)
+    {
+        await bexioClient.DeleteAsync($"/2.0/contact/{contactId}");
     }
 }
