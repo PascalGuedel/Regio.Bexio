@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Regio.Bexio.Domain.Model;
 using Regio.Bexio.Model;
@@ -15,7 +14,6 @@ internal interface ICleanupService
 
 internal class CleanupService(
     ILogger<InvoiceService> logger,
-    IMapper mapper,
     IContactService contactService,
     IInvoiceService invoiceService) : ICleanupService
 {
@@ -58,13 +56,13 @@ internal class CleanupService(
         for (var index = 0; index < invoices.Count; index++)
         {
             var invoice = invoices[index];
-
+        
             await invoiceService.SetInvoiceToDraftAsync(invoice.id.GetValueOrDefault());
-
+        
             await invoiceService.DeleteInvoiceAsync(invoice.id.GetValueOrDefault());
             logger.LogInformation("Deleted invoice {actualInvoice}/{invoiceCount}", index + 1, invoices.Count);
         }
-
+        
         logger.LogInformation("Deleted all invoices");
     }
 
@@ -81,11 +79,6 @@ internal class CleanupService(
                 g.Min(c => c.id),
                 g.Select(c => c.id).ToImmutableList()))
             .ToImmutableList();
-
-        var invoices = (await invoiceService.GetInvoicesAsync()).ToImmutableList();
-        var invoicesToUpdate = GetInvoicesToUpdate(invoices, groupedContacts).ToImmutableList();
-
-        await UpdateInvoicesAsync(invoicesToUpdate, invoices);
 
         await DeleteContactsAsync(groupedContacts, contacts);
 
@@ -121,59 +114,6 @@ internal class CleanupService(
             logger.LogInformation("Deleted contact {contactCount}/{contactIdsToDeleteCount}", contactCount,
                 contactIdsToDelete.Count);
             contactCount++;
-        }
-    }
-
-    private IImmutableList<(InvoiceGetDto, int)> GetInvoicesToUpdate(
-        IImmutableList<InvoiceGetDto> invoices, 
-        IImmutableList<GroupedContact> groupedContacts)
-    {
-        var invoicesToUpdate = new List<(InvoiceGetDto, int)>();
-        
-        foreach (var invoice in invoices)
-        {
-            if (groupedContacts.Any(i => i.MinId == invoice.contact_id))
-            {
-                continue;
-            }
-
-            var relevantContact = groupedContacts
-                .FirstOrDefault(c => c.Ids.Contains(invoice.contact_id.GetValueOrDefault()));
-
-            if (relevantContact == null)
-            {
-                continue;
-            }
-
-            invoicesToUpdate.Add((invoice, relevantContact.MinId));
-        }
-
-        return invoicesToUpdate.ToImmutableList();
-    }
-
-    private async Task UpdateInvoicesAsync(
-        IImmutableList<(InvoiceGetDto, int)> invoicesToUpdate,
-        IImmutableList<InvoiceGetDto> invoices)
-    {
-        Console.WriteLine(
-            $"Do you really want to update all invoices with wrong contact relations " +
-            $"({invoicesToUpdate.Count} from {invoices.Count} invoices) and archive the contacts? (yes/no)");
-        var answer = Console.ReadLine();
-
-        if (answer != "yes")
-        {
-            return;
-        }
-
-        var invoiceUpdateCount = 1;
-        foreach (var invoiceToUpdate in invoicesToUpdate)
-        {
-            var putModel = mapper.Map<InvoicePutDto>(invoiceToUpdate.Item1);
-            await invoiceService.UpdateInvoiceAsync(putModel, invoiceToUpdate.Item1.id.GetValueOrDefault());
-            logger.LogInformation(
-                "Updated invoice {invoiceUpdateCount}/{invoicesToUpdateCount}", 
-                invoiceUpdateCount, invoicesToUpdate.Count);
-            invoiceUpdateCount++;
         }
     }
 }

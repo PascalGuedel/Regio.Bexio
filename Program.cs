@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Polly;
+using Polly.Extensions.Http;
 using Regio.Bexio.Automapper;
 using Regio.Bexio.Domain;
 using Regio.Bexio.Infrastructure;
@@ -24,7 +26,7 @@ try
 
     var invoiceService = services.GetRequiredService<IImportInvoiceService>();
     var cleanupService = services.GetRequiredService<ICleanupService>();
-    
+
     var config = services.GetRequiredService<IConfiguration>();
 
     if (config.GetValue<bool>("Bexio:DeleteInvoicesAndContacts"))
@@ -36,10 +38,15 @@ try
     {
         await cleanupService.CleanupContactsAsync();
     }
-    
+
     await invoiceService.ImportInvoicesAsync();
 
     host.Run();
+}
+catch (AggregateException ae)
+{
+    ae.Flatten().InnerExceptions.ToList()
+        .ForEach(innerEx => Log.Error(innerEx, "An error occurred during parallel execution"));
 }
 catch (Exception ex)
 {
@@ -63,7 +70,14 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
                 .AddSingleton<IExcelService, ExcelService>()
                 .AddSingleton<IImportInvoiceService, ImportInvoiceService>()
                 .AddSingleton<ICleanupService, CleanupService>()
-                .AddSingleton<IBexioHttpClient, BexioHttpClient>()
                 .AddAutoMapper(typeof(MappingProfile))
-                .AddHttpClient();
+                .AddHttpClient<IBexioHttpClient, BexioHttpClient>()
+                .AddPolicyHandler(GetRetryPolicy());
         });
+
+static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+{
+    return HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .WaitAndRetryAsync(3, _ => TimeSpan.FromMilliseconds(2000));
+}

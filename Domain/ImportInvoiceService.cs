@@ -31,7 +31,7 @@ internal class ImportInvoiceService(
             for (var index = 0; index < inputInvoices.Count; index++)
             {
                 logger.LogInformation("Process {actualInvoice}/{numberOfInvoices}", index + 1, inputInvoices.Count);
-
+            
                 var inputInvoice = inputInvoices[index];
                 await ProcessInvoice(inputInvoice);
             }
@@ -78,6 +78,7 @@ internal class ImportInvoiceService(
         }
 
         // Create Invoice
+        logger.LogInformation("Invoice {inputInvoiceNr} does not exists and will be created", inputInvoice.Nr);
         await invoiceService.CreateInvoiceAsync(inputInvoice, contact.id.GetValueOrDefault());
     }
 }

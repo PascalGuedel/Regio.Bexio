@@ -94,7 +94,7 @@ internal class ContactService(
             await DeleteContactAsync(contact.id);
             logger.LogInformation("Deleted contact {actualContact}/{contactCount}", index + 1, contacts.Count);
         }
-
+        
         logger.LogInformation("Deleted all contacts");
     }
 
