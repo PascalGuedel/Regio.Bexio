@@ -1,0 +1,5 @@
+v1.1.0
+- Fixed bug on creating contacts (forgot 'Kontaktperson: ' in search operation)
+- Implemented cleanup logic in bexio => just 'delete' contacts so they are archived
+  (nothing else needed on invoices, they refer simply to an archived contact)
+- Update of all nuget packages

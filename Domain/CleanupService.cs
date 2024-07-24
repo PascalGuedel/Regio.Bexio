@@ -74,7 +74,7 @@ internal class CleanupService(
         var groupedContacts = contacts
             .GroupBy(c => (c.name_1, c.name_2))
             .Select(g => new GroupedContact(
-                g.Key.name_1,
+                g.Key.name_1 ?? string.Empty,
                 g.Key.name_2,
                 g.Min(c => c.id),
                 g.Select(c => c.id).ToImmutableList()))
