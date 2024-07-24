@@ -3,9 +3,9 @@ namespace Regio.Bexio.Model;
 public record ContactGetDto
 {
     public int id { get; set; }
-    public string nr { get; set; }
+    public string? nr { get; set; }
     public int contact_type_id { get; set; }
-    public string name_1 { get; set; }
+    public string? name_1 { get; set; }
     public string? name_2 { get; set; }
     public int? salutation_id { get; set; }
     public int? salutation_form { get; set; }
